@@ -1,0 +1,221 @@
+import sys
+print (sys.getrecursionlimit())
+
+
+
+#Generate random DNA sequence
+
+nuc_list = ['A', 'G', 'C', 'T']
+
+from random import randrange
+
+dna = ""
+
+for position in range(999999):
+  dna = dna + nuc_list[randrange(4)]
+
+("Nuclear DNA is "+dna)
+
+
+def promoter_hunter(dna):
+
+  import re
+  promoters = []
+  promoter_loci = []
+  starts = ['TTGACA', 'TTGACT', 'TTGACC', 'TTGACG', 'TTGAAA', 'TTGATA', 'TTGAGA', 'TTGTCA', 'TTGCCA', 'TTGGCA', 'TTAACA', 'TTTACA', 'TTCACA']
+  stops = ['TATAAT', 'TAAAAT', 'TAGAAT', 'TACAAT', 'TATTAT', 'TATCAT', 'TATGAT', 'TATATT', 'TATACT', 'TATAGT', 'TATAAT']
+
+  for start in starts:
+    for stop in stops:
+      pattern = f'{start}\w{{15,19}}{stop}'
+      for i in (re.findall(pattern, dna)):
+        promoters.append(i)
+  
+  for promoter in promoters:
+    loc = dna.find(str(promoter))
+    promoter_loci.append(loc)
+    #(assumes no two promoters are the same - very improbable!)
+
+  promoter_loci.sort()
+  print (promoter_loci)
+  return promoter_loci
+
+
+
+
+#print (promoter_hunter(dna))
+
+
+
+def terminator_hunter(dna):
+
+  terminators = []
+  terminator_loci = []
+
+  def GCcontent(seq):
+    c=0
+    for i in seq:
+      if i == 'G' or i== 'C':
+        c=c+1
+    if c/len(seq) >= 0.7: #HERE
+      return True
+  
+  def Tcontent(seq):
+    c=0
+    for i in seq:
+      if i == 'T':
+        c=c+1
+    if c/len(seq) >= 0.7: #HERE
+      return True
+
+  dic = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'}
+
+  for x in range(12//2, 30//2): #EVEN
+
+    if x==6:
+      y=2
+    elif x==7:
+      y=3
+    else:
+      y=4
+
+    for loc in range(len(dna)-2*x):
+      isPalindrome = True
+
+      for n in range(x-y):
+          if dna[loc+n] != dic.get(dna[loc+2*x-n-1]): 
+            isPalindrome = False
+
+      if(isPalindrome) and GCcontent(dna[loc:loc+x-y]+dna[loc+x+y: loc+2*x]) == True and Tcontent(dna[loc+2*x: loc+2*x+10]) == True and 'even, Locus '+str(loc) not in terminators:
+          terminators.append(dna[loc: loc+2*x+10])
+          terminators.append('even, Locus '+str(loc)+', '+str(x))
+          terminator_loci.append(loc)
+  
+  for x in range(10//2, 30//2): #ODD
+
+    if x==5:
+      y=1
+    elif x==6:
+      y=2
+    elif x==7:
+      y=3
+    else:
+      y=4
+
+    for loc in range(len(dna)-2*x):
+      isPalindrome = True
+
+      for n in range(x-y):
+          if dna[loc+n] != dic.get(dna[loc+2*x-n]): 
+            isPalindrome = False
+      
+      if(isPalindrome) and GCcontent(dna[loc:loc+x-y]+dna[loc+x+y+1: loc+2*x+1]) == True and Tcontent(dna[loc+2*x+1: loc+2*x+11]) == True and 'odd, Locus '+str(loc) not in terminators:
+        terminators.append(dna[loc: loc+2*x+11])
+        terminators.append('odd, Locus '+str(loc)+', '+str(x))
+        terminator_loci.append(loc)
+  
+  terminator_loci.sort()
+
+  if terminators == []:
+    return 'No terminators found.'
+  else:
+    print (terminator_loci)
+    return terminator_loci
+
+
+
+
+
+#print (terminator_hunter(dna))
+
+
+def trancript_hunter(dna, ploci, tloci):
+
+  transcripts = []
+  transcript_start_loci = []
+
+  for ploc in ploci:
+    for tloc in tloci:
+      if tloc > ploc:
+        transcripts.append(dna[ploc+40: tloc+40])
+        transcript_start_loci.append(ploc+40)
+        ploci.remove(ploc)
+        break
+  
+  return transcripts
+
+
+#print (trancript_hunter(dna, promoter_hunter(dna), terminator_hunter(dna)))
+
+
+
+
+def translator(transcripts):
+
+  all_genes = []
+  all_proteins = []
+
+  codon = { 
+        'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M', 
+        'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T', 
+        'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K', 
+        'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R', 
+        'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L', 
+        'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P', 
+        'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q', 
+        'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R', 
+        'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V', 
+        'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A', 
+        'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E', 
+        'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G', 
+        'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S', 
+        'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L', 
+        'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_', 
+        'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W', 
+    } 
+
+  for transcript in transcripts:
+    
+    genes = []
+    proteins = []
+    currentMaxDepth = 0
+
+    def func(transcript, depth):
+
+      nonlocal currentMaxDepth
+
+      if depth > currentMaxDepth:
+        currentMaxDepth = depth
+        #print (currentMaxDepth)
+
+      protein = ''
+
+      s = transcript.find('ATG')
+
+      if s != -1:
+        for x in [x for x in range(0, len(transcript)-2) if x % 3 == 0]:
+          if len(transcript[s+x:s+x+3]) != 3:
+            proteins.append(protein)
+            break
+          elif codon[transcript[s+x:s+x+3]] != '_':
+            protein = protein + codon[transcript[s+x:s+x+3]]
+          else:
+            genes.append(transcript[s:s+x+3])
+            transcript = transcript[s+x+3: len(transcript)]
+            proteins.append(protein)
+            func(transcript, depth+1)
+            break
+      
+    func(transcript, 0)
+    all_genes.append(genes)
+    all_proteins.append(proteins)
+
+  return all_genes
+
+
+
+print (translator(trancript_hunter(dna, promoter_hunter(dna), terminator_hunter(dna))))
+
+
+
+
